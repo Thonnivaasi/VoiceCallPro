@@ -22,8 +22,8 @@ public class CallService extends Service {
     public static final String ACTION_END_CALL = "com.voicecallpro.END_CALL";
     private static final String CHANNEL_ID = "voicecall_channel";
     private static final int NOTIF_ID = 1;
-    private static final int SAMPLE_RATE = 8000;
-    private static final int BUFFER_SIZE = 1024;
+    private static final int SAMPLE_RATE = 16000;
+    private static final int BUFFER_SIZE = 320;
     private static final int AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
     private static final int CHANNEL_IN = AudioFormat.CHANNEL_IN_MONO;
     private static final int CHANNEL_OUT = AudioFormat.CHANNEL_OUT_MONO;
@@ -95,7 +95,9 @@ public class CallService extends Service {
                 ? MediaRecorder.AudioSource.DEFAULT : MediaRecorder.AudioSource.MIC;
         audioRecord = new AudioRecord(micSrc, SAMPLE_RATE, CHANNEL_IN, AUDIO_FORMAT, recBuf);
         int trackBuf = Math.max(AudioTrack.getMinBufferSize(SAMPLE_RATE, CHANNEL_OUT, AUDIO_FORMAT), BUFFER_SIZE * 2);
-        audioTrack = new AudioTrack(AudioManager.STREAM_VOICE_CALL, SAMPLE_RATE, CHANNEL_OUT, AUDIO_FORMAT, trackBuf, AudioTrack.MODE_STREAM);
+       int minTrack = AudioTrack.getMinBufferSize(SAMPLE_RATE, CHANNEL_OUT, AUDIO_FORMAT);
+audioTrack = new AudioTrack(AudioManager.STREAM_VOICE_CALL, SAMPLE_RATE, CHANNEL_OUT, AUDIO_FORMAT, minTrack, AudioTrack.MODE_STREAM);
+audioTrack.setPlaybackRate(SAMPLE_RATE);
         audioRecord.startRecording();
         audioTrack.play();
     }
