@@ -5,6 +5,9 @@
     <color name="accent">#42A5F5</color>
     <color name="green">#2E7D32</color>
     <color name="red">#C62828</color>
+    <color name="amber">#F59F00</color>
+    <color name="teal">#00838F</color>
+    <color name="orange">#E65100</color>
     <color name="bg_dark">#121212</color>
     <color name="bg_card">#1E1E1E</color>
     <color name="text_primary">#FFFFFF</color>
