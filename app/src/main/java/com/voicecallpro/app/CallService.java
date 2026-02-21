@@ -1,4 +1,4 @@
-package com.voicecallpro.app;
+Find this:package com.voicecallpro.app;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -95,9 +95,9 @@ public class CallService extends Service {
                 ? MediaRecorder.AudioSource.DEFAULT : MediaRecorder.AudioSource.MIC;
         audioRecord = new AudioRecord(micSrc, SAMPLE_RATE, CHANNEL_IN, AUDIO_FORMAT, recBuf);
         int trackBuf = Math.max(AudioTrack.getMinBufferSize(SAMPLE_RATE, CHANNEL_OUT, AUDIO_FORMAT), BUFFER_SIZE * 2);
-       int minTrack = AudioTrack.getMinBufferSize(SAMPLE_RATE, CHANNEL_OUT, AUDIO_FORMAT);
-int trackBuf = minTrack * 2;
-audioTrack = new AudioTrack(AudioManager.STREAM_VOICE_CALL, SAMPLE_RATE, CHANNEL_OUT, AUDIO_FORMAT, trackBuf, AudioTrack.MODE_STREAM);
+        int minTrack = AudioTrack.getMinBufferSize(SAMPLE_RATE, CHANNEL_OUT, AUDIO_FORMAT);
+int playBuf = minTrack * 2;
+audioTrack = new AudioTrack(AudioManager.STREAM_VOICE_CALL, SAMPLE_RATE, CHANNEL_OUT, AUDIO_FORMAT, playBuf, AudioTrack.MODE_STREAM);
         audioRecord.startRecording();
         audioTrack.play();
     }
