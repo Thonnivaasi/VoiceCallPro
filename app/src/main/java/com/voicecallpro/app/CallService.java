@@ -23,7 +23,7 @@ public class CallService extends Service {
     private static final String CHANNEL_ID = "voicecall_channel";
     private static final int NOTIF_ID = 1;
     private static final int SAMPLE_RATE = 16000;
-    private static final int BUFFER_SIZE = 320;
+    private static final int BUFFER_SIZE = 640;
     private static final int AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
     private static final int CHANNEL_IN = AudioFormat.CHANNEL_IN_MONO;
     private static final int CHANNEL_OUT = AudioFormat.CHANNEL_OUT_MONO;
@@ -96,8 +96,8 @@ public class CallService extends Service {
         audioRecord = new AudioRecord(micSrc, SAMPLE_RATE, CHANNEL_IN, AUDIO_FORMAT, recBuf);
         int trackBuf = Math.max(AudioTrack.getMinBufferSize(SAMPLE_RATE, CHANNEL_OUT, AUDIO_FORMAT), BUFFER_SIZE * 2);
        int minTrack = AudioTrack.getMinBufferSize(SAMPLE_RATE, CHANNEL_OUT, AUDIO_FORMAT);
-audioTrack = new AudioTrack(AudioManager.STREAM_VOICE_CALL, SAMPLE_RATE, CHANNEL_OUT, AUDIO_FORMAT, minTrack, AudioTrack.MODE_STREAM);
-audioTrack.setPlaybackRate(SAMPLE_RATE);
+int trackBuf = minTrack * 2;
+audioTrack = new AudioTrack(AudioManager.STREAM_VOICE_CALL, SAMPLE_RATE, CHANNEL_OUT, AUDIO_FORMAT, trackBuf, AudioTrack.MODE_STREAM);
         audioRecord.startRecording();
         audioTrack.play();
     }
