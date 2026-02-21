@@ -5,13 +5,13 @@ workflows:
     environment:
       java: 17
     scripts:
-      - name: Download gradle wrapper jar
+      - name: Setup Gradle wrapper
         script: |
           mkdir -p gradle/wrapper
-          curl -Lo gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar
-      - name: Set gradlew executable
-        script: chmod +x gradlew
+          curl -fL "https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
+          curl -fL "https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradlew" -o gradlew
+          chmod +x gradlew
       - name: Build debug APK
-        script: ./gradlew assembleDebug
+        script: ./gradlew assembleDebug --stacktrace
     artifacts:
       - app/build/outputs/apk/debug/*.apk
