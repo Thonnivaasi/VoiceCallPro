@@ -195,12 +195,14 @@ public class MainActivity extends AppCompatActivity {
         inCall = true;
         btnEndCall.setVisibility(View.VISIBLE);
         tvTimer.setVisibility(View.VISIBLE);
+        findViewById(R.id.layoutCallControls).setVisibility(View.VISIBLE);
         callSeconds = 0; startTimer();
     }
     private void endCall() {
         inCall = false; stopTimer();
         tvTimer.setVisibility(View.GONE);
         btnEndCall.setVisibility(View.GONE);
+        findViewById(R.id.layoutCallControls).setVisibility(View.GONE);
         tvRoomCodeDisplay.setVisibility(View.GONE);
         setStatus("Idle"); tvSignal.setText("Signal: --");
         if (wifiDiscovery != null) { wifiDiscovery.stop(); wifiDiscovery = null; }
