@@ -62,6 +62,8 @@ public class MainActivity extends AppCompatActivity {
         bindService(new Intent(this, CallService.class), serviceConn, Context.BIND_AUTO_CREATE);
     }
     private void bindViews() {
+        ((TextView)findViewById(R.id.tvWifiLabel)).setTextColor(getColor(R.color.text_secondary));
+((TextView)findViewById(R.id.tvWifiBtLabel)).setTextColor(getColor(R.color.text_secondary));
         switchWifiBt = findViewById(R.id.switchWifiBt);
         switchBtMic = findViewById(R.id.switchBtMic);
         tvStatus = findViewById(R.id.tvStatus);
@@ -95,15 +97,34 @@ public class MainActivity extends AppCompatActivity {
             else setStatus("Mode: WiFi");
         });
         btnHost.setOnClickListener(v -> onHostClicked());
-        btnCall.setOnClickListener(v -> onCallClicked());
+        switchWifiBt.setOnCheckedChangeListener((b, checked) -> {
+    int color = checked ? R.color.accent : R.color.text_secondary;
+    ((TextView)findViewById(R.id.tvWifiLabel)).setTextColor(getColor(color));
+    ((TextView)findViewById(R.id.tvWifiBtLabel)).setTextColor(getColor(color));
+});btnCall.setOnClickListener(v -> onCallClicked());
         btnMute.setOnClickListener(v -> toggleMute());
         btnSpeaker.setOnClickListener(v -> toggleSpeaker());
         btnEndCall.setOnClickListener(v -> endCall());
     }
     private void loadPairedDevices() {
-        pairedDevices.clear(); pairedNames.clear();
+   uint color = checked ? R.color.accent : R.color.text_secondary;
+((TextView)findViewById(R.id.tvBtAudioLabel)).setTextColor(getColor(color));
+((TextView)findViewById(R.id.tvBtMicLabel)).setTextColor(getColor(color));     pairedDevices.clear(); pairedNames.clear();
         if (btAdapter == null) { toast("Bluetooth not available"); return; }
-        if (Build.VERSION.SDK_INT >= 31 && checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+        if (Build.VERSION.SDK_INT >= 31 && checkSelfPerswitchWifiBt.setOnCheckedChangeListener((b, checked) -> {
+    ((TextView)findViewById(R.id.tvWifiLabel)).setTextColor(
+        getColor(checked ? R.color.text_secondary : R.color.accent));
+    ((TextView)findViewById(R.id.tvWifiBtLabel)).setTextColor(
+        getColor(checked ? R.color.accent : R.color.text_secondary));
+});switchBtMic.setOnCheckedChangeListener((b, checked) -> {
+    layoutWifiCode.setVisibility(checked ? View.GONE : View.VISIBLE);
+    layoutBtDevices.setVisibility(checked ? View.VISIBLE : View.GONE);
+    if (checked) loadPairedDevices();
+    ((TextView)findViewById(R.id.tvBtAudioLabel)).setTextColor(
+        getColor(checked ? R.color.text_secondary : R.color.accent));
+    ((TextView)findViewById(R.id.tvBtMicLabel)).setTextColor(
+        getColor(checked ? R.color.accent : R.color.text_secondary));
+});mission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
             toast("BT Connect permission needed"); return;
         }
         Set<BluetoothDevice> bonded = btAdapter.getBondedDevices();
