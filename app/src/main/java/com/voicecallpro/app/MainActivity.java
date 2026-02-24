@@ -33,10 +33,9 @@ public class MainActivity extends AppCompatActivity {
     private static final int PERM_REQUEST = 100;
     private SwitchMaterial switchWifiBt, switchBtMic;
     private TextView tvStatus, tvSignal, tvTimer, tvRoomCodeDisplay;
-    private TextView tvWifiLabel, tvWifiBtLabel;
     private Button btnHost, btnCall, btnMute, btnSpeaker, btnEndCall;
     private TextInputEditText etRoomCode;
-    private View layoutWifiCode, layoutBtDevices, layoutCallControls, layoutHostCall;
+    private View layoutWifiCode, layoutBtDevices;
     private Spinner spinnerDevices;
     private boolean inCall = false, muted = false, speakerOn = false;
     private Handler timerHandler = new Handler(Looper.getMainLooper());
@@ -46,8 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean serviceBound = false;
     private final ServiceConnection serviceConn = new ServiceConnection() {
         public void onServiceConnected(ComponentName n, IBinder b) {
-            callService = ((CallService.LocalBinder) b).getService();
-            serviceBound = true;
+            callService = ((CallService.LocalBinder) b).getService(); serviceBound = true;
         }
         public void onServiceDisconnected(ComponentName n) { serviceBound = false; }
     };
@@ -60,21 +58,18 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        bindViews();
-        setupBluetooth();
-        requestPerms();
-        setupListeners();
+        bindViews(); setupBluetooth(); requestPerms(); setupListeners();
         bindService(new Intent(this, CallService.class), serviceConn, Context.BIND_AUTO_CREATE);
     }
     private void bindViews() {
+        ((TextView)findViewById(R.id.tvWifiLabel)).setTextColor(getColor(R.color.text_secondary));
+((TextView)findViewById(R.id.tvWifiBtLabel)).setTextColor(getColor(R.color.text_secondary));
         switchWifiBt = findViewById(R.id.switchWifiBt);
         switchBtMic = findViewById(R.id.switchBtMic);
         tvStatus = findViewById(R.id.tvStatus);
         tvSignal = findViewById(R.id.tvSignal);
         tvTimer = findViewById(R.id.tvTimer);
         tvRoomCodeDisplay = findViewById(R.id.tvRoomCodeDisplay);
-        tvWifiLabel = findViewById(R.id.tvWifiLabel);
-        tvWifiBtLabel = findViewById(R.id.tvWifiBtLabel);
         btnHost = findViewById(R.id.btnHost);
         btnCall = findViewById(R.id.btnCall);
         btnMute = findViewById(R.id.btnMute);
@@ -83,11 +78,7 @@ public class MainActivity extends AppCompatActivity {
         etRoomCode = findViewById(R.id.etRoomCode);
         layoutWifiCode = findViewById(R.id.layoutWifiCode);
         layoutBtDevices = findViewById(R.id.layoutBtDevices);
-        layoutCallControls = findViewById(R.id.layoutCallControls);
-        layoutHostCall = findViewById(R.id.layoutHostCall);
         spinnerDevices = findViewById(R.id.spinnerDevices);
-        tvWifiLabel.setTextColor(getColor(R.color.text_secondary));
-        tvWifiBtLabel.setTextColor(getColor(R.color.text_secondary));
     }
     private void setupBluetooth() {
         BluetoothManager bm = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
@@ -95,35 +86,51 @@ public class MainActivity extends AppCompatActivity {
     }
     private void setupListeners() {
         switchWifiBt.setOnCheckedChangeListener((b, checked) -> {
-            int color = checked ? R.color.accent : R.color.text_secondary;
-            tvWifiLabel.setTextColor(getColor(color));
-            tvWifiBtLabel.setTextColor(getColor(color));
+            ((TextView)findViewById(R.id.tvWifiLabel)).setTextColor(getColor(checked ? R.color.text_secondary : R.color.accent));
+            ((TextView)findViewById(R.id.tvWifiBtLabel)).setTextColor(getColor(checked ? R.color.accent : R.color.text_secondary));
+            setStatus(checked ? "Mode: WiFi + BT Audio" : "Mode: WiFi Only");
         });
         switchBtMic.setOnCheckedChangeListener((b, checked) -> {
             layoutWifiCode.setVisibility(checked ? View.GONE : View.VISIBLE);
             layoutBtDevices.setVisibility(checked ? View.VISIBLE : View.GONE);
-            if (checked) loadPairedDevices();
+            if (checked) { loadPairedDevices(); setStatus("Mode: BT + BT Mic"); }
+            else setStatus("Mode: WiFi");
         });
         btnHost.setOnClickListener(v -> onHostClicked());
-        btnCall.setOnClickListener(v -> onCallClicked());
+        switchWifiBt.setOnCheckedChangeListener((b, checked) -> {
+    int color = checked ? R.color.accent : R.color.text_secondary;
+    ((TextView)findViewById(R.id.tvWifiLabel)).setTextColor(getColor(color));
+    ((TextView)findViewById(R.id.tvWifiBtLabel)).setTextColor(getColor(color));
+});btnCall.setOnClickListener(v -> onCallClicked());
         btnMute.setOnClickListener(v -> toggleMute());
         btnSpeaker.setOnClickListener(v -> toggleSpeaker());
         btnEndCall.setOnClickListener(v -> endCall());
     }
     private void loadPairedDevices() {
-        pairedDevices.clear();
-        pairedNames.clear();
+   uint color = checked ? R.color.accent : R.color.text_secondary;
+((TextView)findViewById(R.id.tvBtAudioLabel)).setTextColor(getColor(color));
+((TextView)findViewById(R.id.tvBtMicLabel)).setTextColor(getColor(color));     pairedDevices.clear(); pairedNames.clear();
         if (btAdapter == null) { toast("Bluetooth not available"); return; }
-        if (Build.VERSION.SDK_INT >= 31 &&
-            checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+        if (Build.VERSION.SDK_INT >= 31 && checkSelfPerswitchWifiBt.setOnCheckedChangeListener((b, checked) -> {
+    ((TextView)findViewById(R.id.tvWifiLabel)).setTextColor(
+        getColor(checked ? R.color.text_secondary : R.color.accent));
+    ((TextView)findViewById(R.id.tvWifiBtLabel)).setTextColor(
+        getColor(checked ? R.color.accent : R.color.text_secondary));
+});switchBtMic.setOnCheckedChangeListener((b, checked) -> {
+    layoutWifiCode.setVisibility(checked ? View.GONE : View.VISIBLE);
+    layoutBtDevices.setVisibility(checked ? View.VISIBLE : View.GONE);
+    if (checked) loadPairedDevices();
+    ((TextView)findViewById(R.id.tvBtAudioLabel)).setTextColor(
+        getColor(checked ? R.color.text_secondary : R.color.accent));
+    ((TextView)findViewById(R.id.tvBtMicLabel)).setTextColor(
+        getColor(checked ? R.color.accent : R.color.text_secondary));
+});mission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
             toast("BT Connect permission needed"); return;
         }
         Set<BluetoothDevice> bonded = btAdapter.getBondedDevices();
-        if (bonded != null) {
-            for (BluetoothDevice d : bonded) {
-                pairedDevices.add(d);
-                pairedNames.add(d.getName() != null ? d.getName() : d.getAddress());
-            }
+        if (bonded != null) for (BluetoothDevice d : bonded) {
+            pairedDevices.add(d);
+            pairedNames.add(d.getName() != null ? d.getName() : d.getAddress());
         }
         ArrayAdapter<String> a = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, pairedNames);
         a.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -140,9 +147,11 @@ public class MainActivity extends AppCompatActivity {
             helper.startAsHost(btAdapter, new BluetoothCallHelper.ConnectionListener() {
                 public void onConnected() {
                     runOnUiThread(() -> {
-                        setStatus("Connected (BT)");
-                        if (serviceBound) callService.startBtCall(true);
-                        onCallStarted();
+                        if (helper.isConnected()) {
+                            setStatus("Connected (BT)");
+                            if (serviceBound) callService.startBtCall(true);
+                            onCallStarted();
+                        } else setStatus("Waiting for guest...");
                     });
                 }
                 public void onError(String msg) { runOnUiThread(() -> setStatus("BT Error: " + msg)); }
@@ -188,6 +197,7 @@ public class MainActivity extends AppCompatActivity {
                 public void onHostFound(InetAddress addr) {
                     runOnUiThread(() -> {
                         setStatus("Connected (WiFi)");
+                        tvSignal.setText("Signal: Good");
                         startSvc();
                         if (serviceBound) callService.startWifiCall(addr, switchWifiBt.isChecked());
                         onCallStarted();
@@ -200,28 +210,22 @@ public class MainActivity extends AppCompatActivity {
     }
     private void startSvc() {
         Intent i = new Intent(this, CallService.class);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(i);
-        else startService(i);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(i); else startService(i);
     }
     private void onCallStarted() {
         inCall = true;
-        layoutHostCall.setVisibility(View.GONE);
-        layoutCallControls.setVisibility(View.VISIBLE);
         btnEndCall.setVisibility(View.VISIBLE);
         tvTimer.setVisibility(View.VISIBLE);
-        callSeconds = 0;
-        startTimer();
+        findViewById(R.id.layoutCallControls).setVisibility(View.VISIBLE);
+        callSeconds = 0; startTimer();
     }
     private void endCall() {
-        inCall = false;
-        stopTimer();
-        layoutHostCall.setVisibility(View.VISIBLE);
-        layoutCallControls.setVisibility(View.GONE);
-        btnEndCall.setVisibility(View.GONE);
+        inCall = false; stopTimer();
         tvTimer.setVisibility(View.GONE);
+        btnEndCall.setVisibility(View.GONE);
+        findViewById(R.id.layoutCallControls).setVisibility(View.GONE);
         tvRoomCodeDisplay.setVisibility(View.GONE);
-        setStatus("Idle");
-        tvSignal.setText("Signal: --");
+        setStatus("Idle"); tvSignal.setText("Signal: --");
         if (wifiDiscovery != null) { wifiDiscovery.stop(); wifiDiscovery = null; }
         if (serviceBound) callService.stopCall();
         stopService(new Intent(this, CallService.class));
@@ -262,9 +266,7 @@ public class MainActivity extends AppCompatActivity {
         }
         if (Build.VERSION.SDK_INT >= 33) perms.add(Manifest.permission.POST_NOTIFICATIONS);
         List<String> needed = new ArrayList<>();
-        for (String p : perms) {
-            if (checkSelfPermission(p) != PackageManager.PERMISSION_GRANTED) needed.add(p);
-        }
+        for (String p : perms) if (checkSelfPermission(p) != PackageManager.PERMISSION_GRANTED) needed.add(p);
         if (!needed.isEmpty()) ActivityCompat.requestPermissions(this, needed.toArray(new String[0]), PERM_REQUEST);
     }
     @Override
