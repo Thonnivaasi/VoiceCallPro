@@ -31,13 +31,17 @@ public class BluetoothCallHelper {
         new Thread(() -> {
             try {
                 serverSocket = adapter.listenUsingRfcommWithServiceRecord("VoiceCallPro", SERVICE_UUID);
-                listener.onConnected();
+                // Wait for guest to connect
                 socket = serverSocket.accept();
-                serverSocket.close();
+                try { serverSocket.close(); } catch (IOException e) {}
+                serverSocket = null;
                 setupStreams();
                 startAudioThreads();
+                // Only fire onConnected ONCE after socket is accepted and streams ready
                 listener.onConnected();
-            } catch (IOException e) { listener.onError("Host error: " + e.getMessage()); }
+            } catch (IOException e) {
+                listener.onError("Host error: " + e.getMessage());
+            }
         }).start();
     }
     public void connectToDevice(BluetoothDevice device, ConnectionListener listener) {
@@ -48,7 +52,9 @@ public class BluetoothCallHelper {
                 setupStreams();
                 startAudioThreads();
                 listener.onConnected();
-            } catch (IOException e) { listener.onError("Connect error: " + e.getMessage()); }
+            } catch (IOException e) {
+                listener.onError("Connect error: " + e.getMessage());
+            }
         }).start();
     }
     private void setupStreams() throws IOException {
@@ -61,7 +67,10 @@ public class BluetoothCallHelper {
             while (running.get()) {
                 try {
                     byte[] buf = readMicBuffer.get();
-                    outputStream.write(buf);
+                    if (buf != null && outputStream != null) {
+                        outputStream.write(buf);
+                        outputStream.flush();
+                    }
                 } catch (IOException e) { running.set(false); }
             }
         }).start();
