@@ -47,7 +47,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="WiFi Only"
-                        android:textColor="@color/accent"
+                        android:textColor="@color/text_secondary"
                         android:textSize="16sp"
                         android:textStyle="bold"/>
                     <com.google.android.material.switchmaterial.SwitchMaterial
@@ -147,16 +147,6 @@
             android:gravity="center"
             android:layout_marginBottom="8dp"
             android:visibility="gone"/>
-        <TextView
-            android:id="@+id/tvLastCall"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text=""
-            android:textColor="@color/text_secondary"
-            android:textSize="13sp"
-            android:gravity="center"
-            android:layout_marginBottom="16dp"
-            android:visibility="gone"/>
         <LinearLayout
             android:id="@+id/layoutWifiCode"
             android:layout_width="match_parent"
@@ -202,6 +192,7 @@
                 android:paddingEnd="12dp"/>
         </LinearLayout>
         <LinearLayout
+            android:id="@+id/layoutHostCall"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
