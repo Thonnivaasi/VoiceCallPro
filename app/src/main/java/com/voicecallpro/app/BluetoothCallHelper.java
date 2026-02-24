@@ -12,6 +12,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 public class BluetoothCallHelper {
     public static final UUID SERVICE_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
+    private static final int CHUNK_SIZE = 128;
     private BluetoothSocket socket;
     private BluetoothServerSocket serverSocket;
     private InputStream inputStream;
@@ -31,13 +32,11 @@ public class BluetoothCallHelper {
         new Thread(() -> {
             try {
                 serverSocket = adapter.listenUsingRfcommWithServiceRecord("VoiceCallPro", SERVICE_UUID);
-                // Wait for guest to connect
                 socket = serverSocket.accept();
                 try { serverSocket.close(); } catch (IOException e) {}
                 serverSocket = null;
                 setupStreams();
                 startAudioThreads();
-                // Only fire onConnected ONCE after socket is accepted and streams ready
                 listener.onConnected();
             } catch (IOException e) {
                 listener.onError("Host error: " + e.getMessage());
@@ -67,15 +66,19 @@ public class BluetoothCallHelper {
             while (running.get()) {
                 try {
                     byte[] buf = readMicBuffer.get();
-                    if (buf != null && outputStream != null) {
-                        outputStream.write(buf);
+                    if (buf == null || outputStream == null) continue;
+                    int offset = 0;
+                    while (offset < buf.length) {
+                        int end = Math.min(offset + CHUNK_SIZE, buf.length);
+                        outputStream.write(buf, offset, end - offset);
                         outputStream.flush();
+                        offset = end;
                     }
                 } catch (IOException e) { running.set(false); }
             }
         }).start();
         new Thread(() -> {
-            byte[] buf = new byte[1024];
+            byte[] buf = new byte[CHUNK_SIZE];
             while (running.get()) {
                 try {
                     int read = inputStream.read(buf);
