@@ -197,13 +197,15 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:layout_marginBottom="10dp">
-            <Button android:id="@+id/btnHost"
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnHost"
                 android:layout_width="0dp" android:layout_height="44dp"
                 android:layout_weight="1" android:layout_marginEnd="8dp"
                 android:text="HOST" android:textSize="13sp"
                 android:textColor="@color/white"
                 android:background="@drawable/btn_primary"/>
-            <Button android:id="@+id/btnCall"
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnCall"
                 android:layout_width="0dp" android:layout_height="44dp"
                 android:layout_weight="1" android:layout_marginStart="8dp"
                 android:text="CALL" android:textSize="13sp"
@@ -217,20 +219,23 @@
             android:orientation="horizontal"
             android:layout_marginBottom="10dp"
             android:visibility="gone">
-            <Button android:id="@+id/btnMute"
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnMute"
                 android:layout_width="0dp" android:layout_height="44dp"
                 android:layout_weight="1" android:layout_marginEnd="8dp"
                 android:text="Mute" android:textSize="13sp"
                 android:textColor="@color/white"
                 android:background="@drawable/btn_amber"/>
-            <Button android:id="@+id/btnSpeaker"
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnSpeaker"
                 android:layout_width="0dp" android:layout_height="44dp"
                 android:layout_weight="1" android:layout_marginStart="8dp"
                 android:text="Speaker" android:textSize="13sp"
                 android:textColor="@color/white"
                 android:background="@drawable/btn_teal"/>
         </LinearLayout>
-        <Button android:id="@+id/btnEndCall"
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnEndCall"
             android:layout_width="match_parent" android:layout_height="52dp"
             android:text="END CALL" android:textSize="16sp"
             android:textStyle="bold"
