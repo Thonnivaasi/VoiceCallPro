@@ -10,13 +10,13 @@ import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.media.MediaRecorder;
+import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
 import androidx.core.app.NotificationCompat;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 public class CallService extends Service {
     public static final String ACTION_END_CALL = "com.voicecallpro.END_CALL";
@@ -39,7 +39,6 @@ public class CallService extends Service {
     private AudioManager audioManager;
     private DatagramSocket audioSocket;
     private final AtomicBoolean running = new AtomicBoolean(false);
-    private final LinkedBlockingQueue<byte[]> playbackQueue = new LinkedBlockingQueue<>(50);
     public class LocalBinder extends android.os.Binder {
         public CallService getService() { return CallService.this; }
     }
@@ -66,23 +65,24 @@ public class CallService extends Service {
         setupAudio(useBtAudio ? CallMode.WIFI_BT_AUDIO : CallMode.WIFI_ONLY);
         startWifiSend();
         startWifiReceive();
-        startPlaybackThread();
         startKeepAlive();
         updateNotification("In call (WiFi" + (useBtAudio ? " + BT Audio)" : ")"));
     }
     public void startBtCall(boolean useBtMic) {
         running.set(true);
         setupAudio(useBtMic ? CallMode.BT_BT_MIC : CallMode.BT_ONLY);
-        startPlaybackThread();
         updateNotification("In call (BT" + (useBtMic ? " + BT Mic)" : ")"));
     }
     public void setBtHelper(BluetoothCallHelper helper) {
         this.btHelper = helper;
-        helper.setAudioCallback(this::onAudioReceived, this::readMicBuffer);
+        // Write directly to audioTrack - no queue, no buffering, no lag
+        helper.setAudioCallback(
+            data -> { if (audioTrack != null) audioTrack.write(data, 0, data.length); },
+            this::readMicBuffer
+        );
     }
     public void stopCall() {
         running.set(false);
-        playbackQueue.clear();
         stopAudio();
         try { if (audioSocket != null) audioSocket.close(); } catch (Exception e) {}
         if (btHelper != null) { btHelper.close(); btHelper = null; }
@@ -96,10 +96,11 @@ public class CallService extends Service {
         }
         int recBuf = Math.max(AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_IN, AUDIO_FORMAT), BUFFER_SIZE);
         int micSrc = (mode == CallMode.BT_BT_MIC || mode == CallMode.WIFI_BT_AUDIO)
-            ? MediaRecorder.AudioSource.DEFAULT : MediaRecorder.AudioSource.MIC;
+                ? MediaRecorder.AudioSource.DEFAULT : MediaRecorder.AudioSource.MIC;
         audioRecord = new AudioRecord(micSrc, SAMPLE_RATE, CHANNEL_IN, AUDIO_FORMAT, recBuf);
         int minTrack = AudioTrack.getMinBufferSize(SAMPLE_RATE, CHANNEL_OUT, AUDIO_FORMAT);
-        audioTrack = new AudioTrack(AudioManager.STREAM_VOICE_CALL, SAMPLE_RATE, CHANNEL_OUT, AUDIO_FORMAT, minTrack, AudioTrack.MODE_STREAM);
+        audioTrack = new AudioTrack(AudioManager.STREAM_VOICE_CALL, SAMPLE_RATE, CHANNEL_OUT,
+                AUDIO_FORMAT, minTrack, AudioTrack.MODE_STREAM);
         audioRecord.startRecording();
         audioTrack.play();
     }
@@ -114,21 +115,6 @@ public class CallService extends Service {
         byte[] buf = new byte[BUFFER_SIZE];
         if (audioRecord != null && !muted) audioRecord.read(buf, 0, buf.length);
         return buf;
-    }
-    private void onAudioReceived(byte[] data) {
-        byte[] copy = new byte[data.length];
-        System.arraycopy(data, 0, copy, 0, data.length);
-        if (!playbackQueue.offer(copy)) { playbackQueue.poll(); playbackQueue.offer(copy); }
-    }
-    private void startPlaybackThread() {
-        new Thread(() -> {
-            while (running.get()) {
-                try {
-                    byte[] data = playbackQueue.take();
-                    if (audioTrack != null) audioTrack.write(data, 0, data.length);
-                } catch (InterruptedException e) { break; }
-            }
-        }).start();
     }
     private void startWifiSend() {
         new Thread(() -> {
@@ -154,8 +140,8 @@ public class CallService extends Service {
                     s.receive(pkt);
                     if (peerAddress == null) peerAddress = pkt.getAddress();
                     byte[] data = new byte[pkt.getLength()];
-                    System.arraycopy(pkt.getData(), 0, data, 0, pkt.getLength());
-                    onAudioReceived(data);
+                    System.arraycopy(pkt.getData(), 0, data, 0, data.length);
+                    if (audioTrack != null) audioTrack.write(data, 0, data.length);
                 }
             } catch (Exception e) {}
         }).start();
@@ -181,23 +167,19 @@ public class CallService extends Service {
         }
     }
     private Notification buildNotification(String text) {
-        Intent openIntent = new Intent(this, MainActivity.class);
-        openIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent openPi = PendingIntent.getActivity(this, 0, openIntent,
-            PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-        Intent endIntent = new Intent(ACTION_END_CALL);
-        endIntent.setPackage(getPackageName());
-        PendingIntent endPi = PendingIntent.getBroadcast(this, 1, endIntent,
-            PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+        Intent ei = new Intent(this, CallService.class);
+        ei.setAction(ACTION_END_CALL);
+        PendingIntent pi = PendingIntent.getService(this, 0, ei, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+        Intent openApp = new Intent(this, MainActivity.class);
+        openApp.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent openPi = PendingIntent.getActivity(this, 1, openApp, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("VoiceCall Pro")
-            .setContentText(text)
-            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
-            .setContentIntent(openPi)
-            .setSilent(true)
-            .setOngoing(true)
-            .addAction(android.R.drawable.ic_delete, "End Call", endPi)
-            .build();
+                .setContentTitle("VoiceCall Pro").setContentText(text)
+                .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+                .setContentIntent(openPi)
+                .setSilent(true).setOngoing(true)
+                .addAction(android.R.drawable.ic_delete, "End Call", pi)
+                .build();
     }
     private void updateNotification(String text) {
         getSystemService(NotificationManager.class).notify(NOTIF_ID, buildNotification(text));
