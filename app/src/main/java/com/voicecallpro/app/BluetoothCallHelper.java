@@ -12,6 +12,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 public class BluetoothCallHelper {
     public static final UUID SERVICE_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
+    private static final int CHUNK_SIZE = 128;
     private BluetoothSocket socket;
     private BluetoothServerSocket serverSocket;
     private InputStream inputStream;
@@ -31,13 +32,16 @@ public class BluetoothCallHelper {
         new Thread(() -> {
             try {
                 serverSocket = adapter.listenUsingRfcommWithServiceRecord("VoiceCallPro", SERVICE_UUID);
-                listener.onConnected();
+                // Accept blocks until guest connects - only ONE onConnected call
                 socket = serverSocket.accept();
-                serverSocket.close();
+                try { serverSocket.close(); } catch (IOException e) {}
+                serverSocket = null;
                 setupStreams();
                 startAudioThreads();
                 listener.onConnected();
-            } catch (IOException e) { listener.onError("Host error: " + e.getMessage()); }
+            } catch (IOException e) {
+                listener.onError("Host error: " + e.getMessage());
+            }
         }).start();
     }
     public void connectToDevice(BluetoothDevice device, ConnectionListener listener) {
@@ -48,7 +52,9 @@ public class BluetoothCallHelper {
                 setupStreams();
                 startAudioThreads();
                 listener.onConnected();
-            } catch (IOException e) { listener.onError("Connect error: " + e.getMessage()); }
+            } catch (IOException e) {
+                listener.onError("Connect error: " + e.getMessage());
+            }
         }).start();
     }
     private void setupStreams() throws IOException {
@@ -57,16 +63,25 @@ public class BluetoothCallHelper {
         running.set(true);
     }
     private void startAudioThreads() {
+        // Send thread - 128 byte chunks with flush to minimize lag
         new Thread(() -> {
             while (running.get()) {
                 try {
                     byte[] buf = readMicBuffer.get();
-                    outputStream.write(buf);
+                    if (buf == null || outputStream == null) continue;
+                    int offset = 0;
+                    while (offset < buf.length) {
+                        int end = Math.min(offset + CHUNK_SIZE, buf.length);
+                        outputStream.write(buf, offset, end - offset);
+                        outputStream.flush();
+                        offset = end;
+                    }
                 } catch (IOException e) { running.set(false); }
             }
         }).start();
+        // Receive thread - reads in 128 byte chunks
         new Thread(() -> {
-            byte[] buf = new byte[1024];
+            byte[] buf = new byte[CHUNK_SIZE];
             while (running.get()) {
                 try {
                     int read = inputStream.read(buf);
