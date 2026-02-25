@@ -23,7 +23,7 @@ public class CallService extends Service {
     private static final String CHANNEL_ID = "voicecall_channel";
     private static final int NOTIF_ID = 1;
     private static final int SAMPLE_RATE = 8000;
-    private static final int BUFFER_SIZE = 1024;
+    private static final int BUFFER_SIZE = 256;
     private static final int AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
     private static final int CHANNEL_IN = AudioFormat.CHANNEL_IN_MONO;
     private static final int CHANNEL_OUT = AudioFormat.CHANNEL_OUT_MONO;
@@ -75,7 +75,6 @@ public class CallService extends Service {
     }
     public void setBtHelper(BluetoothCallHelper helper) {
         this.btHelper = helper;
-        // Write directly to audioTrack - no queue, no buffering, no lag
         helper.setAudioCallback(
             data -> { if (audioTrack != null) audioTrack.write(data, 0, data.length); },
             this::readMicBuffer
@@ -94,10 +93,11 @@ public class CallService extends Service {
             audioManager.startBluetoothSco();
             audioManager.setBluetoothScoOn(true);
         }
-        int recBuf = Math.max(AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_IN, AUDIO_FORMAT), BUFFER_SIZE);
+        // Use minimum buffer size to reduce AudioRecord internal buffering lag
+        int minBuf = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_IN, AUDIO_FORMAT);
         int micSrc = (mode == CallMode.BT_BT_MIC || mode == CallMode.WIFI_BT_AUDIO)
                 ? MediaRecorder.AudioSource.DEFAULT : MediaRecorder.AudioSource.MIC;
-        audioRecord = new AudioRecord(micSrc, SAMPLE_RATE, CHANNEL_IN, AUDIO_FORMAT, recBuf);
+        audioRecord = new AudioRecord(micSrc, SAMPLE_RATE, CHANNEL_IN, AUDIO_FORMAT, minBuf);
         int minTrack = AudioTrack.getMinBufferSize(SAMPLE_RATE, CHANNEL_OUT, AUDIO_FORMAT);
         audioTrack = new AudioTrack(AudioManager.STREAM_VOICE_CALL, SAMPLE_RATE, CHANNEL_OUT,
                 AUDIO_FORMAT, minTrack, AudioTrack.MODE_STREAM);
